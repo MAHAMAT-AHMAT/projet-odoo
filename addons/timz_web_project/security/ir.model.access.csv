@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_timz_request_user,timz.client.request.user,model_timz_client_request,timz_web_project.group_timz_user,1,1,1,0
-access_timz_request_manager,timz.client.request.manager,model_timz_client_request,timz_web_project.group_timz_manager,1,1,1,1
-access_timz_project_user,timz.web.project.user,model_timz_web_project,timz_web_project.group_timz_user,1,1,0,0
-access_timz_project_manager,timz.web.project.manager,model_timz_web_project,timz_web_project.group_timz_manager,1,1,1,1
