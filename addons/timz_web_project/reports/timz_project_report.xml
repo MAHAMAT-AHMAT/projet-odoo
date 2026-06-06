@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Déclaration de l'action rapport -->
+    <record id="action_report_timz_project" model="ir.actions.report">
+        <field name="name">Fiche Projet Web</field>
+        <field name="model">timz.web.project</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">timz_web_project.report_timz_project_template</field>
+        <field name="report_file">timz_web_project.report_timz_project_template</field>
+        <field name="print_report_name">'Fiche_Projet_' + (object.reference or '') + '_' + (object.client_id.name or '')</field>
+        <field name="binding_model_id" ref="model_timz_web_project"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+</odoo>
