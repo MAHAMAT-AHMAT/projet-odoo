@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_LivrFact"
+  targetNamespace="http://timzandco.com/bpmn/livraison-facturation"
+  exporter="bpmn.io"
+  exporterVersion="17.0">
+
+  <bpmn:collaboration id="Collaboration_LivrFact">
+    <bpmn:participant id="Part_ChefProjetLF" name="Chef de Projet" processRef="Proc_ChefProjetLF"/>
+    <bpmn:participant id="Part_Comptable" name="Comptable / Facturation" processRef="Proc_Comptable"/>
+    <bpmn:participant id="Part_ClientLF" name="Client" processRef="Proc_ClientLF"/>
+
+    <bpmn:messageFlow id="MFLF_1" name="PV de livraison" sourceRef="Task_EnvoyerPVLivraison" targetRef="StartEvent_ClientRecePV"/>
+    <bpmn:messageFlow id="MFLF_2" name="Bon pour facturation" sourceRef="Task_TransmettreBonFact" targetRef="StartEvent_ComptableRecoit"/>
+    <bpmn:messageFlow id="MFLF_3" name="Facture client" sourceRef="Task_EnvoyerFacture" targetRef="StartEvent_ClientReceitFacture"/>
+    <bpmn:messageFlow id="MFLF_4" name="Règlement" sourceRef="Task_PayerFacture" targetRef="IntermEvent_PaiementRecu"/>
+  </bpmn:collaboration>
+
+  <!-- ═══════════════════════════════════════
+       POOL 1 : CHEF DE PROJET
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_ChefProjetLF" name="Chef de Projet" isExecutable="false">
+
+    <bpmn:startEvent id="SE_CPLF_Start" name="Projet livré (état: delivered)">
+      <bpmn:outgoing>SF_CPLF1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_RedigePVLivraison" name="Rédiger le PV de livraison">
+      <bpmn:incoming>SF_CPLF1</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_EnvoyerPVLivraison" name="Envoyer le PV au client">
+      <bpmn:incoming>SF_CPLF2</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_TransmettreBonFact" name="Transmettre le bon pour facturation">
+      <bpmn:incoming>SF_CPLF3</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="IntermEvent_PaiementRecu" name="Confirmer paiement reçu">
+      <bpmn:incoming>SF_CPLF4</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CPLF1"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:userTask id="Task_MarquerFacture" name="Marquer projet Facturé">
+      <bpmn:incoming>SF_CPLF5</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="Task_ArchiverProjet" name="Archiver le projet">
+      <bpmn:incoming>SF_CPLF6</bpmn:incoming>
+      <bpmn:outgoing>SF_CPLF7</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="SE_CPLF_End" name="Projet clôturé et archivé">
+      <bpmn:incoming>SF_CPLF7</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_CPLF1" sourceRef="SE_CPLF_Start" targetRef="Task_RedigePVLivraison"/>
+    <bpmn:sequenceFlow id="SF_CPLF2" sourceRef="Task_RedigePVLivraison" targetRef="Task_EnvoyerPVLivraison"/>
+    <bpmn:sequenceFlow id="SF_CPLF3" sourceRef="Task_EnvoyerPVLivraison" targetRef="Task_TransmettreBonFact"/>
+    <bpmn:sequenceFlow id="SF_CPLF4" sourceRef="Task_TransmettreBonFact" targetRef="IntermEvent_PaiementRecu"/>
+    <bpmn:sequenceFlow id="SF_CPLF5" sourceRef="IntermEvent_PaiementRecu" targetRef="Task_MarquerFacture"/>
+    <bpmn:sequenceFlow id="SF_CPLF6" sourceRef="Task_MarquerFacture" targetRef="Task_ArchiverProjet"/>
+    <bpmn:sequenceFlow id="SF_CPLF7" sourceRef="Task_ArchiverProjet" targetRef="SE_CPLF_End"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 2 : COMPTABLE
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_Comptable" name="Comptable / Facturation" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_ComptableRecoit" name="Recevoir le bon de facturation">
+      <bpmn:outgoing>SF_COMP1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_COMP1"/>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_CreerFactureOdoo" name="Créer la facture dans Odoo">
+      <bpmn:incoming>SF_COMP1</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:userTask id="Task_ValiderFacture" name="Valider la facture">
+      <bpmn:incoming>SF_COMP2</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_EnvoyerFacture" name="Envoyer la facture au client">
+      <bpmn:incoming>SF_COMP3</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_SuivrePaiement" name="Suivre le paiement (relances si nécessaire)">
+      <bpmn:incoming>SF_COMP4</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP5</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_PaiementRecu" name="Paiement reçu ?">
+      <bpmn:incoming>SF_COMP5</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP6_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_COMP6_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_EnregistrerPaiement" name="Enregistrer le paiement">
+      <bpmn:incoming>SF_COMP6_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP7</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_Relancer" name="Envoyer une relance client">
+      <bpmn:incoming>SF_COMP6_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_COMP8</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_COMP_End" name="Facture soldée — projet archivé">
+      <bpmn:incoming>SF_COMP7</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_COMP1" sourceRef="StartEvent_ComptableRecoit" targetRef="Task_CreerFactureOdoo"/>
+    <bpmn:sequenceFlow id="SF_COMP2" sourceRef="Task_CreerFactureOdoo" targetRef="Task_ValiderFacture"/>
+    <bpmn:sequenceFlow id="SF_COMP3" sourceRef="Task_ValiderFacture" targetRef="Task_EnvoyerFacture"/>
+    <bpmn:sequenceFlow id="SF_COMP4" sourceRef="Task_EnvoyerFacture" targetRef="Task_SuivrePaiement"/>
+    <bpmn:sequenceFlow id="SF_COMP5" sourceRef="Task_SuivrePaiement" targetRef="GW_PaiementRecu"/>
+    <bpmn:sequenceFlow id="SF_COMP6_Oui" name="Oui" sourceRef="GW_PaiementRecu" targetRef="Task_EnregistrerPaiement"/>
+    <bpmn:sequenceFlow id="SF_COMP6_Non" name="Non" sourceRef="GW_PaiementRecu" targetRef="Task_Relancer"/>
+    <bpmn:sequenceFlow id="SF_COMP7" sourceRef="Task_EnregistrerPaiement" targetRef="SE_COMP_End"/>
+    <bpmn:sequenceFlow id="SF_COMP8" sourceRef="Task_Relancer" targetRef="Task_SuivrePaiement"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 3 : CLIENT
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_ClientLF" name="Client" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_ClientRecePV" name="Recevoir le PV de livraison">
+      <bpmn:outgoing>SF_CLF1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CLF1"/>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_SignerPV" name="Signer le PV de livraison">
+      <bpmn:incoming>SF_CLF1</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="StartEvent_ClientReceitFacture" name="Recevoir la facture">
+      <bpmn:incoming>SF_CLF2</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CLF2"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:userTask id="Task_VerifierFacture" name="Vérifier la facture">
+      <bpmn:incoming>SF_CLF3</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_FactureConforme" name="Facture conforme ?">
+      <bpmn:incoming>SF_CLF4</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF5_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CLF5_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_PayerFacture" name="Effectuer le virement bancaire">
+      <bpmn:incoming>SF_CLF5_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_CLF_End" name="Paiement effectué">
+      <bpmn:incoming>SF_CLF6</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:userTask id="Task_DemanderAvoir" name="Demander un avoir / correction">
+      <bpmn:incoming>SF_CLF5_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_CLF7</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_CLF_End2" name="Litige facture signalé">
+      <bpmn:incoming>SF_CLF7</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_CLF1" sourceRef="StartEvent_ClientRecePV" targetRef="Task_SignerPV"/>
+    <bpmn:sequenceFlow id="SF_CLF2" sourceRef="Task_SignerPV" targetRef="StartEvent_ClientReceitFacture"/>
+    <bpmn:sequenceFlow id="SF_CLF3" sourceRef="StartEvent_ClientReceitFacture" targetRef="Task_VerifierFacture"/>
+    <bpmn:sequenceFlow id="SF_CLF4" sourceRef="Task_VerifierFacture" targetRef="GW_FactureConforme"/>
+    <bpmn:sequenceFlow id="SF_CLF5_Oui" name="Oui" sourceRef="GW_FactureConforme" targetRef="Task_PayerFacture"/>
+    <bpmn:sequenceFlow id="SF_CLF5_Non" name="Non" sourceRef="GW_FactureConforme" targetRef="Task_DemanderAvoir"/>
+    <bpmn:sequenceFlow id="SF_CLF6" sourceRef="Task_PayerFacture" targetRef="SE_CLF_End"/>
+    <bpmn:sequenceFlow id="SF_CLF7" sourceRef="Task_DemanderAvoir" targetRef="SE_CLF_End2"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       DIAGRAMME (DI)
+  ═══════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_LivrFact">
+    <bpmndi:BPMNPlane id="BPMNPlane_LivrFact" bpmnElement="Collaboration_LivrFact">
+
+      <!-- Pool Chef de projet -->
+      <bpmndi:BPMNShape id="Part_ChefProjetLF_di" bpmnElement="Part_ChefProjetLF" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1200" height="180"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="SE_CPLF_Start_di" bpmnElement="SE_CPLF_Start">
+        <dc:Bounds x="212" y="152" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="195" width="90" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RedigePVLivraison_di" bpmnElement="Task_RedigePVLivraison">
+        <dc:Bounds x="300" y="130" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnvoyerPVLivraison_di" bpmnElement="Task_EnvoyerPVLivraison">
+        <dc:Bounds x="490" y="130" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TransmettreBonFact_di" bpmnElement="Task_TransmettreBonFact">
+        <dc:Bounds x="680" y="130" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermEvent_PaiementRecu_di" bpmnElement="IntermEvent_PaiementRecu">
+        <dc:Bounds x="872" y="152" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="848" y="195" width="84" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MarquerFacture_di" bpmnElement="Task_MarquerFacture">
+        <dc:Bounds x="960" y="130" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ArchiverProjet_di" bpmnElement="Task_ArchiverProjet">
+        <dc:Bounds x="1150" y="130" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CPLF_End_di" bpmnElement="SE_CPLF_End">
+        <dc:Bounds x="1342" y="152" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1318" y="195" width="84" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_CPLF1_di" bpmnElement="SF_CPLF1"><di:waypoint x="248" y="170"/><di:waypoint x="300" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF2_di" bpmnElement="SF_CPLF2"><di:waypoint x="430" y="170"/><di:waypoint x="490" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF3_di" bpmnElement="SF_CPLF3"><di:waypoint x="620" y="170"/><di:waypoint x="680" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF4_di" bpmnElement="SF_CPLF4"><di:waypoint x="810" y="170"/><di:waypoint x="872" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF5_di" bpmnElement="SF_CPLF5"><di:waypoint x="908" y="170"/><di:waypoint x="960" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF6_di" bpmnElement="SF_CPLF6"><di:waypoint x="1090" y="170"/><di:waypoint x="1150" y="170"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CPLF7_di" bpmnElement="SF_CPLF7"><di:waypoint x="1280" y="170"/><di:waypoint x="1342" y="170"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Comptable -->
+      <bpmndi:BPMNShape id="Part_Comptable_di" bpmnElement="Part_Comptable" isHorizontal="true">
+        <dc:Bounds x="160" y="320" width="1200" height="230"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_ComptableRecoit_di" bpmnElement="StartEvent_ComptableRecoit">
+        <dc:Bounds x="212" y="415" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="458" width="90" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreerFactureOdoo_di" bpmnElement="Task_CreerFactureOdoo">
+        <dc:Bounds x="300" y="393" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValiderFacture_di" bpmnElement="Task_ValiderFacture">
+        <dc:Bounds x="490" y="393" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnvoyerFacture_di" bpmnElement="Task_EnvoyerFacture">
+        <dc:Bounds x="680" y="393" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SuivrePaiement_di" bpmnElement="Task_SuivrePaiement">
+        <dc:Bounds x="870" y="393" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_PaiementRecu_di" bpmnElement="GW_PaiementRecu" isMarkerVisible="true">
+        <dc:Bounds x="1060" y="408" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1043" y="465" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnregistrerPaiement_di" bpmnElement="Task_EnregistrerPaiement">
+        <dc:Bounds x="1170" y="393" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Relancer_di" bpmnElement="Task_Relancer">
+        <dc:Bounds x="1060" y="490" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_COMP_End_di" bpmnElement="SE_COMP_End">
+        <dc:Bounds x="1362" y="415" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1338" y="458" width="84" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_COMP1_di" bpmnElement="SF_COMP1"><di:waypoint x="248" y="433"/><di:waypoint x="300" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP2_di" bpmnElement="SF_COMP2"><di:waypoint x="430" y="433"/><di:waypoint x="490" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP3_di" bpmnElement="SF_COMP3"><di:waypoint x="620" y="433"/><di:waypoint x="680" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP4_di" bpmnElement="SF_COMP4"><di:waypoint x="810" y="433"/><di:waypoint x="870" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP5_di" bpmnElement="SF_COMP5"><di:waypoint x="1000" y="433"/><di:waypoint x="1060" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP6_Oui_di" bpmnElement="SF_COMP6_Oui"><di:waypoint x="1110" y="433"/><di:waypoint x="1170" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP6_Non_di" bpmnElement="SF_COMP6_Non"><di:waypoint x="1085" y="458"/><di:waypoint x="1085" y="490"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP7_di" bpmnElement="SF_COMP7"><di:waypoint x="1300" y="433"/><di:waypoint x="1362" y="433"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_COMP8_di" bpmnElement="SF_COMP8"><di:waypoint x="1060" y="530"/><di:waypoint x="935" y="530"/><di:waypoint x="935" y="473"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Client -->
+      <bpmndi:BPMNShape id="Part_ClientLF_di" bpmnElement="Part_ClientLF" isHorizontal="true">
+        <dc:Bounds x="160" y="610" width="1000" height="220"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_ClientRecePV_di" bpmnElement="StartEvent_ClientRecePV">
+        <dc:Bounds x="212" y="690" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="733" width="90" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SignerPV_di" bpmnElement="Task_SignerPV">
+        <dc:Bounds x="300" y="668" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_ClientReceitFacture_di" bpmnElement="StartEvent_ClientReceitFacture">
+        <dc:Bounds x="492" y="690" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="468" y="733" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VerifierFacture_di" bpmnElement="Task_VerifierFacture">
+        <dc:Bounds x="580" y="668" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_FactureConforme_di" bpmnElement="GW_FactureConforme" isMarkerVisible="true">
+        <dc:Bounds x="770" y="683" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="753" y="740" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PayerFacture_di" bpmnElement="Task_PayerFacture">
+        <dc:Bounds x="880" y="668" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CLF_End_di" bpmnElement="SE_CLF_End">
+        <dc:Bounds x="1072" y="690" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1048" y="733" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DemanderAvoir_di" bpmnElement="Task_DemanderAvoir">
+        <dc:Bounds x="880" y="768" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CLF_End2_di" bpmnElement="SE_CLF_End2">
+        <dc:Bounds x="1072" y="790" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1048" y="833" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_CLF1_di" bpmnElement="SF_CLF1"><di:waypoint x="248" y="708"/><di:waypoint x="300" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF2_di" bpmnElement="SF_CLF2"><di:waypoint x="430" y="708"/><di:waypoint x="492" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF3_di" bpmnElement="SF_CLF3"><di:waypoint x="528" y="708"/><di:waypoint x="580" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF4_di" bpmnElement="SF_CLF4"><di:waypoint x="710" y="708"/><di:waypoint x="770" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF5_Oui_di" bpmnElement="SF_CLF5_Oui"><di:waypoint x="820" y="708"/><di:waypoint x="880" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF5_Non_di" bpmnElement="SF_CLF5_Non"><di:waypoint x="795" y="733"/><di:waypoint x="795" y="808"/><di:waypoint x="880" y="808"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF6_di" bpmnElement="SF_CLF6"><di:waypoint x="1010" y="708"/><di:waypoint x="1072" y="708"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CLF7_di" bpmnElement="SF_CLF7"><di:waypoint x="1010" y="808"/><di:waypoint x="1072" y="808"/></bpmndi:BPMNEdge>
+
+      <!-- Message flows -->
+      <bpmndi:BPMNEdge id="MFLF_1_di" bpmnElement="MFLF_1">
+        <di:waypoint x="555" y="210"/>
+        <di:waypoint x="555" y="610"/>
+        <di:waypoint x="230" y="610"/>
+        <di:waypoint x="230" y="690"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFLF_2_di" bpmnElement="MFLF_2">
+        <di:waypoint x="745" y="210"/>
+        <di:waypoint x="745" y="320"/>
+        <di:waypoint x="230" y="320"/>
+        <di:waypoint x="230" y="415"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFLF_3_di" bpmnElement="MFLF_3">
+        <di:waypoint x="745" y="473"/>
+        <di:waypoint x="745" y="610"/>
+        <di:waypoint x="510" y="610"/>
+        <di:waypoint x="510" y="690"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFLF_4_di" bpmnElement="MFLF_4">
+        <di:waypoint x="945" y="668"/>
+        <di:waypoint x="945" y="610"/>
+        <di:waypoint x="890" y="610"/>
+        <di:waypoint x="890" y="188"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_SuiviProjet"
+  targetNamespace="http://timzandco.com/bpmn/suivi-projet"
+  exporter="bpmn.io"
+  exporterVersion="17.0">
+
+  <bpmn:collaboration id="Collaboration_SuiviProjet">
+    <bpmn:participant id="Part_ChefProjet" name="Chef de Projet" processRef="Proc_ChefProjet"/>
+    <bpmn:participant id="Part_Dev" name="Développeurs" processRef="Proc_Dev"/>
+    <bpmn:participant id="Part_ClientSuivi" name="Client" processRef="Proc_ClientSuivi"/>
+
+    <bpmn:messageFlow id="MFS_1" name="Attribution tâches" sourceRef="Task_CreerTaches" targetRef="StartEvent_TacheAttribuee"/>
+    <bpmn:messageFlow id="MFS_2" name="Livraison interne" sourceRef="Task_LivrerInterne" targetRef="IntermEvent_LivraisonInterne"/>
+    <bpmn:messageFlow id="MFS_3" name="Lien accès review" sourceRef="Task_EnvoyerReview" targetRef="StartEvent_ReviewClient"/>
+    <bpmn:messageFlow id="MFS_4" name="Retour client" sourceRef="Task_ValiderClient" targetRef="IntermEvent_RetourClient"/>
+  </bpmn:collaboration>
+
+  <!-- ═══════════════════════════════════════
+       POOL 1 : CHEF DE PROJET
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_ChefProjet" name="Chef de Projet" isExecutable="false">
+
+    <bpmn:startEvent id="SE_CP_Start" name="Projet web créé (état: brouillon)">
+      <bpmn:outgoing>SF_CP1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_PlanifierProjet" name="Planifier le projet (dates, budget, équipe)">
+      <bpmn:incoming>SF_CP1</bpmn:incoming>
+      <bpmn:outgoing>SF_CP2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_DemarrerProjet" name="Démarrer le projet">
+      <bpmn:incoming>SF_CP2</bpmn:incoming>
+      <bpmn:outgoing>SF_CP3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_CreerTaches" name="Créer les tâches Odoo Project">
+      <bpmn:incoming>SF_CP3</bpmn:incoming>
+      <bpmn:outgoing>SF_CP4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="IntermEvent_LivraisonInterne" name="Recevoir livraison développeurs">
+      <bpmn:incoming>SF_CP4</bpmn:incoming>
+      <bpmn:outgoing>SF_CP5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CP1"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:userTask id="Task_RevisionInterne" name="Effectuer la révision interne (tests, QA)">
+      <bpmn:incoming>SF_CP5</bpmn:incoming>
+      <bpmn:outgoing>SF_CP6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_QualiteOK" name="Qualité conforme ?">
+      <bpmn:incoming>SF_CP6</bpmn:incoming>
+      <bpmn:outgoing>SF_CP7_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CP7_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_EnvoyerReview" name="Soumettre à la revue client">
+      <bpmn:incoming>SF_CP7_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CP8</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="IntermEvent_RetourClient" name="Recevoir retour client">
+      <bpmn:incoming>SF_CP8</bpmn:incoming>
+      <bpmn:outgoing>SF_CP9</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CP2"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:exclusiveGateway id="GW_ClientValide" name="Client valide ?">
+      <bpmn:incoming>SF_CP9</bpmn:incoming>
+      <bpmn:outgoing>SF_CP10_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CP10_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_ConfirmerLivraison" name="Confirmer la livraison">
+      <bpmn:incoming>SF_CP10_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CP11</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_CP_End" name="Projet livré (état: delivered)">
+      <bpmn:incoming>SF_CP11</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:userTask id="Task_DemanderCorrections" name="Remonter les corrections aux développeurs">
+      <bpmn:incoming>SF_CP7_Non</bpmn:incoming>
+      <bpmn:incoming>SF_CP10_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_CP12</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateThrowEvent id="IntermThrow_Corrections" name="Corrections demandées">
+      <bpmn:incoming>SF_CP12</bpmn:incoming>
+      <bpmn:outgoing>SF_CP13</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CP3"/>
+    </bpmn:intermediateThrowEvent>
+
+    <bpmn:sequenceFlow id="SF_CP13" sourceRef="IntermThrow_Corrections" targetRef="IntermEvent_LivraisonInterne"/>
+
+    <bpmn:sequenceFlow id="SF_CP1" sourceRef="SE_CP_Start" targetRef="Task_PlanifierProjet"/>
+    <bpmn:sequenceFlow id="SF_CP2" sourceRef="Task_PlanifierProjet" targetRef="Task_DemarrerProjet"/>
+    <bpmn:sequenceFlow id="SF_CP3" sourceRef="Task_DemarrerProjet" targetRef="Task_CreerTaches"/>
+    <bpmn:sequenceFlow id="SF_CP4" sourceRef="Task_CreerTaches" targetRef="IntermEvent_LivraisonInterne"/>
+    <bpmn:sequenceFlow id="SF_CP5" sourceRef="IntermEvent_LivraisonInterne" targetRef="Task_RevisionInterne"/>
+    <bpmn:sequenceFlow id="SF_CP6" sourceRef="Task_RevisionInterne" targetRef="GW_QualiteOK"/>
+    <bpmn:sequenceFlow id="SF_CP7_Oui" name="Oui" sourceRef="GW_QualiteOK" targetRef="Task_EnvoyerReview"/>
+    <bpmn:sequenceFlow id="SF_CP7_Non" name="Non" sourceRef="GW_QualiteOK" targetRef="Task_DemanderCorrections"/>
+    <bpmn:sequenceFlow id="SF_CP8" sourceRef="Task_EnvoyerReview" targetRef="IntermEvent_RetourClient"/>
+    <bpmn:sequenceFlow id="SF_CP9" sourceRef="IntermEvent_RetourClient" targetRef="GW_ClientValide"/>
+    <bpmn:sequenceFlow id="SF_CP10_Oui" name="Validé" sourceRef="GW_ClientValide" targetRef="Task_ConfirmerLivraison"/>
+    <bpmn:sequenceFlow id="SF_CP10_Non" name="Corrections" sourceRef="GW_ClientValide" targetRef="Task_DemanderCorrections"/>
+    <bpmn:sequenceFlow id="SF_CP11" sourceRef="Task_ConfirmerLivraison" targetRef="SE_CP_End"/>
+    <bpmn:sequenceFlow id="SF_CP12" sourceRef="Task_DemanderCorrections" targetRef="IntermThrow_Corrections"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 2 : DÉVELOPPEURS
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_Dev" name="Développeurs" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_TacheAttribuee" name="Recevoir les tâches">
+      <bpmn:outgoing>SF_D1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_D1"/>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_AnalyserTaches" name="Analyser et estimer les tâches">
+      <bpmn:incoming>SF_D1</bpmn:incoming>
+      <bpmn:outgoing>SF_D2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_Developper" name="Développer les fonctionnalités">
+      <bpmn:incoming>SF_D2</bpmn:incoming>
+      <bpmn:incoming>SF_D_Reloop</bpmn:incoming>
+      <bpmn:outgoing>SF_D3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_TestsUnitaires" name="Effectuer les tests unitaires">
+      <bpmn:incoming>SF_D3</bpmn:incoming>
+      <bpmn:outgoing>SF_D4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_TestsOK" name="Tests passés ?">
+      <bpmn:incoming>SF_D4</bpmn:incoming>
+      <bpmn:outgoing>SF_D5_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_D5_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_LivrerInterne" name="Marquer tâches Done">
+      <bpmn:incoming>SF_D5_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_D6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_CorrigerBugs" name="Corriger les bugs">
+      <bpmn:incoming>SF_D5_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_D_Reloop</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_Dev_End" name="Développement terminé">
+      <bpmn:incoming>SF_D6</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_D1" sourceRef="StartEvent_TacheAttribuee" targetRef="Task_AnalyserTaches"/>
+    <bpmn:sequenceFlow id="SF_D2" sourceRef="Task_AnalyserTaches" targetRef="Task_Developper"/>
+    <bpmn:sequenceFlow id="SF_D3" sourceRef="Task_Developper" targetRef="Task_TestsUnitaires"/>
+    <bpmn:sequenceFlow id="SF_D4" sourceRef="Task_TestsUnitaires" targetRef="GW_TestsOK"/>
+    <bpmn:sequenceFlow id="SF_D5_Oui" name="Oui" sourceRef="GW_TestsOK" targetRef="Task_LivrerInterne"/>
+    <bpmn:sequenceFlow id="SF_D5_Non" name="Non" sourceRef="GW_TestsOK" targetRef="Task_CorrigerBugs"/>
+    <bpmn:sequenceFlow id="SF_D6" sourceRef="Task_LivrerInterne" targetRef="SE_Dev_End"/>
+    <bpmn:sequenceFlow id="SF_D_Reloop" sourceRef="Task_CorrigerBugs" targetRef="Task_Developper"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 3 : CLIENT
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_ClientSuivi" name="Client" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_ReviewClient" name="Recevoir lien de recette">
+      <bpmn:outgoing>SF_CS1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CS1"/>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_TesterApplication" name="Tester l'application / le site livré">
+      <bpmn:incoming>SF_CS1</bpmn:incoming>
+      <bpmn:outgoing>SF_CS2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_ClientSatisfait" name="Satisfait ?">
+      <bpmn:incoming>SF_CS2</bpmn:incoming>
+      <bpmn:outgoing>SF_CS3_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CS3_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_ValiderClient" name="Valider et signer le PV de recette">
+      <bpmn:incoming>SF_CS3_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CS4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_CS_End" name="Recette validée">
+      <bpmn:incoming>SF_CS4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:userTask id="Task_SignalerAnomalies" name="Signaler les anomalies">
+      <bpmn:incoming>SF_CS3_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_CS5</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="SE_CS_End2" name="Corrections demandées">
+      <bpmn:incoming>SF_CS5</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_CS1" sourceRef="StartEvent_ReviewClient" targetRef="Task_TesterApplication"/>
+    <bpmn:sequenceFlow id="SF_CS2" sourceRef="Task_TesterApplication" targetRef="GW_ClientSatisfait"/>
+    <bpmn:sequenceFlow id="SF_CS3_Oui" name="Oui" sourceRef="GW_ClientSatisfait" targetRef="Task_ValiderClient"/>
+    <bpmn:sequenceFlow id="SF_CS3_Non" name="Non" sourceRef="GW_ClientSatisfait" targetRef="Task_SignalerAnomalies"/>
+    <bpmn:sequenceFlow id="SF_CS4" sourceRef="Task_ValiderClient" targetRef="SE_CS_End"/>
+    <bpmn:sequenceFlow id="SF_CS5" sourceRef="Task_SignalerAnomalies" targetRef="SE_CS_End2"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       DIAGRAMME (DI)
+  ═══════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Suivi">
+    <bpmndi:BPMNPlane id="BPMNPlane_Suivi" bpmnElement="Collaboration_SuiviProjet">
+
+      <!-- Pool Chef de projet -->
+      <bpmndi:BPMNShape id="Part_ChefProjet_di" bpmnElement="Part_ChefProjet" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1500" height="240"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="SE_CP_Start_di" bpmnElement="SE_CP_Start">
+        <dc:Bounds x="212" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="225" width="90" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PlanifierProjet_di" bpmnElement="Task_PlanifierProjet">
+        <dc:Bounds x="300" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DemarrerProjet_di" bpmnElement="Task_DemarrerProjet">
+        <dc:Bounds x="490" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreerTaches_di" bpmnElement="Task_CreerTaches">
+        <dc:Bounds x="680" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermEvent_LivraisonInterne_di" bpmnElement="IntermEvent_LivraisonInterne">
+        <dc:Bounds x="872" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="848" y="225" width="84" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RevisionInterne_di" bpmnElement="Task_RevisionInterne">
+        <dc:Bounds x="960" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_QualiteOK_di" bpmnElement="GW_QualiteOK" isMarkerVisible="true">
+        <dc:Bounds x="1150" y="175" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1133" y="232" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnvoyerReview_di" bpmnElement="Task_EnvoyerReview">
+        <dc:Bounds x="1260" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermEvent_RetourClient_di" bpmnElement="IntermEvent_RetourClient">
+        <dc:Bounds x="1452" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1428" y="225" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_ClientValide_di" bpmnElement="GW_ClientValide" isMarkerVisible="true">
+        <dc:Bounds x="1545" y="175" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1528" y="232" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfirmerLivraison_di" bpmnElement="Task_ConfirmerLivraison">
+        <dc:Bounds x="1660" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CP_End_di" bpmnElement="SE_CP_End">
+        <dc:Bounds x="1852" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1828" y="225" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DemanderCorrections_di" bpmnElement="Task_DemanderCorrections">
+        <dc:Bounds x="1260" y="270" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermThrow_Corrections_di" bpmnElement="IntermThrow_Corrections">
+        <dc:Bounds x="1452" y="292" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1428" y="335" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_CP1_di" bpmnElement="SF_CP1"><di:waypoint x="248" y="200"/><di:waypoint x="300" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP2_di" bpmnElement="SF_CP2"><di:waypoint x="430" y="200"/><di:waypoint x="490" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP3_di" bpmnElement="SF_CP3"><di:waypoint x="620" y="200"/><di:waypoint x="680" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP4_di" bpmnElement="SF_CP4"><di:waypoint x="810" y="200"/><di:waypoint x="872" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP5_di" bpmnElement="SF_CP5"><di:waypoint x="908" y="200"/><di:waypoint x="960" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP6_di" bpmnElement="SF_CP6"><di:waypoint x="1090" y="200"/><di:waypoint x="1150" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP7_Oui_di" bpmnElement="SF_CP7_Oui"><di:waypoint x="1200" y="200"/><di:waypoint x="1260" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP7_Non_di" bpmnElement="SF_CP7_Non"><di:waypoint x="1175" y="225"/><di:waypoint x="1175" y="310"/><di:waypoint x="1260" y="310"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP8_di" bpmnElement="SF_CP8"><di:waypoint x="1390" y="200"/><di:waypoint x="1452" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP9_di" bpmnElement="SF_CP9"><di:waypoint x="1488" y="200"/><di:waypoint x="1545" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP10_Oui_di" bpmnElement="SF_CP10_Oui"><di:waypoint x="1595" y="200"/><di:waypoint x="1660" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP10_Non_di" bpmnElement="SF_CP10_Non"><di:waypoint x="1570" y="225"/><di:waypoint x="1570" y="310"/><di:waypoint x="1390" y="310"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP11_di" bpmnElement="SF_CP11"><di:waypoint x="1790" y="200"/><di:waypoint x="1852" y="200"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP12_di" bpmnElement="SF_CP12"><di:waypoint x="1390" y="310"/><di:waypoint x="1452" y="310"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CP13_di" bpmnElement="SF_CP13"><di:waypoint x="1470" y="292"/><di:waypoint x="1470" y="80"/><di:waypoint x="890" y="80"/><di:waypoint x="890" y="182"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Développeurs -->
+      <bpmndi:BPMNShape id="Part_Dev_di" bpmnElement="Part_Dev" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="900" height="220"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_TacheAttribuee_di" bpmnElement="StartEvent_TacheAttribuee">
+        <dc:Bounds x="212" y="470" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="513" width="90" height="40"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalyserTaches_di" bpmnElement="Task_AnalyserTaches">
+        <dc:Bounds x="300" y="448" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Developper_di" bpmnElement="Task_Developper">
+        <dc:Bounds x="490" y="448" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TestsUnitaires_di" bpmnElement="Task_TestsUnitaires">
+        <dc:Bounds x="680" y="448" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_TestsOK_di" bpmnElement="GW_TestsOK" isMarkerVisible="true">
+        <dc:Bounds x="870" y="463" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="853" y="520" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LivrerInterne_di" bpmnElement="Task_LivrerInterne">
+        <dc:Bounds x="980" y="448" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CorrigerBugs_di" bpmnElement="Task_CorrigerBugs">
+        <dc:Bounds x="680" y="540" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_Dev_End_di" bpmnElement="SE_Dev_End">
+        <dc:Bounds x="1162" y="470" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1138" y="513" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_D1_di" bpmnElement="SF_D1"><di:waypoint x="248" y="488"/><di:waypoint x="300" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D2_di" bpmnElement="SF_D2"><di:waypoint x="430" y="488"/><di:waypoint x="490" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D3_di" bpmnElement="SF_D3"><di:waypoint x="620" y="488"/><di:waypoint x="680" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D4_di" bpmnElement="SF_D4"><di:waypoint x="810" y="488"/><di:waypoint x="870" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D5_Oui_di" bpmnElement="SF_D5_Oui"><di:waypoint x="920" y="488"/><di:waypoint x="980" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D5_Non_di" bpmnElement="SF_D5_Non"><di:waypoint x="895" y="513"/><di:waypoint x="895" y="580"/><di:waypoint x="810" y="580"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D6_di" bpmnElement="SF_D6"><di:waypoint x="1110" y="488"/><di:waypoint x="1162" y="488"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_D_Reloop_di" bpmnElement="SF_D_Reloop"><di:waypoint x="680" y="580"/><di:waypoint x="555" y="580"/><di:waypoint x="555" y="528"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Client -->
+      <bpmndi:BPMNShape id="Part_ClientSuivi_di" bpmnElement="Part_ClientSuivi" isHorizontal="true">
+        <dc:Bounds x="160" y="660" width="800" height="180"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_ReviewClient_di" bpmnElement="StartEvent_ReviewClient">
+        <dc:Bounds x="212" y="732" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="185" y="775" width="90" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_TesterApplication_di" bpmnElement="Task_TesterApplication">
+        <dc:Bounds x="300" y="710" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_ClientSatisfait_di" bpmnElement="GW_ClientSatisfait" isMarkerVisible="true">
+        <dc:Bounds x="490" y="725" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="473" y="782" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValiderClient_di" bpmnElement="Task_ValiderClient">
+        <dc:Bounds x="600" y="710" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CS_End_di" bpmnElement="SE_CS_End">
+        <dc:Bounds x="792" y="732" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="768" y="775" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SignalerAnomalies_di" bpmnElement="Task_SignalerAnomalies">
+        <dc:Bounds x="600" y="800" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SE_CS_End2_di" bpmnElement="SE_CS_End2">
+        <dc:Bounds x="792" y="822" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="768" y="865" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_CS1_di" bpmnElement="SF_CS1"><di:waypoint x="248" y="750"/><di:waypoint x="300" y="750"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CS2_di" bpmnElement="SF_CS2"><di:waypoint x="430" y="750"/><di:waypoint x="490" y="750"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CS3_Oui_di" bpmnElement="SF_CS3_Oui"><di:waypoint x="540" y="750"/><di:waypoint x="600" y="750"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CS3_Non_di" bpmnElement="SF_CS3_Non"><di:waypoint x="515" y="775"/><di:waypoint x="515" y="840"/><di:waypoint x="600" y="840"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CS4_di" bpmnElement="SF_CS4"><di:waypoint x="730" y="750"/><di:waypoint x="792" y="750"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CS5_di" bpmnElement="SF_CS5"><di:waypoint x="730" y="840"/><di:waypoint x="792" y="840"/></bpmndi:BPMNEdge>
+
+      <!-- Message flows -->
+      <bpmndi:BPMNEdge id="MFS_1_di" bpmnElement="MFS_1">
+        <di:waypoint x="745" y="240"/>
+        <di:waypoint x="745" y="380"/>
+        <di:waypoint x="230" y="380"/>
+        <di:waypoint x="230" y="470"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFS_2_di" bpmnElement="MFS_2">
+        <di:waypoint x="1045" y="448"/>
+        <di:waypoint x="1045" y="380"/>
+        <di:waypoint x="890" y="380"/>
+        <di:waypoint x="890" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFS_3_di" bpmnElement="MFS_3">
+        <di:waypoint x="1325" y="240"/>
+        <di:waypoint x="1325" y="660"/>
+        <di:waypoint x="230" y="660"/>
+        <di:waypoint x="230" y="732"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MFS_4_di" bpmnElement="MFS_4">
+        <di:waypoint x="665" y="710"/>
+        <di:waypoint x="665" y="660"/>
+        <di:waypoint x="1470" y="660"/>
+        <di:waypoint x="1470" y="218"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

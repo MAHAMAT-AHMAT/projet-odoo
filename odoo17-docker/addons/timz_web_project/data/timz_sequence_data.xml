@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Séquence pour les demandes clients -->
+        <record id="seq_timz_client_request" model="ir.sequence">
+            <field name="name">Demande Client Timz</field>
+            <field name="code">timz.client.request</field>
+            <field name="prefix">TIMZ/DEM/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les projets web -->
+        <record id="seq_timz_web_project" model="ir.sequence">
+            <field name="name">Projet Web Timz</field>
+            <field name="code">timz.web.project</field>
+            <field name="prefix">TIMZ/PRJ/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

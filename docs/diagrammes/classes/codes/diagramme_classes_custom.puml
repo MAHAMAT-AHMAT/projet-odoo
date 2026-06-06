@@ -1,0 +1,94 @@
+@startuml diagramme_classes_custom
+
+left to right direction
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classHeaderBackgroundColor #4B0082
+skinparam classHeaderFontColor #FFFFFF
+skinparam classBorderColor #4B0082
+skinparam classBackgroundColor #F9F6FF
+skinparam classFontStyle bold
+skinparam packageBorderColor #4B0082
+skinparam packageBackgroundColor #EDE7F6
+skinparam packageFontSize 14
+skinparam packageFontStyle bold
+skinparam arrowColor #4B0082
+skinparam arrowThickness 1.5
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam nodesep 80
+skinparam ranksep 60
+
+title Classes Custom — timz_web_project\nTimz & Co · Odoo 17
+
+package "timz_web_project" #EDE7F6 {
+
+    class "timz.client.request" as TimzRequest {
+        + name : Char
+        + client_id : Many2one
+        + email : Char
+        + phone : Char
+        + description : Text
+        + project_type : Selection
+        + priority : Selection
+        + budget : Monetary
+        + deadline : Date
+        + note : Text
+        + state : Selection
+        + kanban_state : Selection
+        + user_id : Many2one
+        + crm_lead_id : Many2one
+        + sale_order_id : Many2one
+        + web_project_id : Many2one
+        + sale_order_count : Integer
+        __
+        + action_qualify()
+        + action_send_proposal()
+        + action_mark_won()
+        + action_mark_lost()
+        + action_create_project()
+    }
+
+    class "timz.web.project" as TimzProject {
+        + name : Char
+        + reference : Char
+        + priority : Selection
+        + project_type : Selection
+        + technology : Selection
+        + description : Html
+        + deliverables : Text
+        + start_date : Date
+        + end_date : Date
+        + actual_end_date : Date
+        + deadline : Date
+        + progress : Integer
+        + budget : Monetary
+        + amount_invoiced : Monetary
+        + team_lead_id : Many2one
+        + developer_ids : Many2many
+        + state : Selection
+        + kanban_state : Selection
+        + client_id : Many2one
+        + client_request_id : Many2one
+        + odoo_project_id : Many2one
+        + sale_order_id : Many2one
+        + invoice_ids : Many2many
+        + invoice_count : Integer
+        + task_count : Integer
+        __
+        + action_start()
+        + action_submit_review()
+        + action_deliver()
+        + action_create_invoice()
+        + action_cancel()
+        + action_reset_draft()
+        + action_print_report()
+    }
+
+}
+
+TimzRequest "1" --> "0..1" TimzProject : crée >\nweb_project_id
+TimzProject "0..1" ..> "1" TimzRequest : origine\nclient_request_id
+
+@enduml

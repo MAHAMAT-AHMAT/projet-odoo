@@ -1,0 +1,274 @@
+═══════════════════════════════════════════════════════════════════════════════
+  DIRECTIVE D'UTILISATION — TIMZ WEB PROJECT (Odoo 17 + Docker)
+  Entreprise : Timz & Co | Étudiant : MAHAMAT AHMAT TIMAN
+═══════════════════════════════════════════════════════════════════════════════
+
+PRÉREQUIS
+──────────────────────────────────────────────────────────────────────────────
+- Docker Desktop installé et en cours d'exécution
+- Docker Compose v2 (inclus dans Docker Desktop)
+- Ports 8069 (Odoo) et 5432 (PostgreSQL) libres
+
+STRUCTURE DU PROJET
+──────────────────────────────────────────────────────────────────────────────
+odoo17-docker/
+├── docker-compose.yml        → Orchestration des services
+├── config/
+│   └── odoo.conf             → Configuration Odoo (addons_path, DB, logs)
+└── addons/
+    └── timz_web_project/     → Module personnalisé Timz & Co
+        ├── __manifest__.py
+        ├── models/
+        ├── views/
+        ├── security/
+        ├── reports/
+        └── data/
+
+
+═══════════════════════════════════════════════════════════════════════════════
+1. LANCER LE PROJET ODOO AVEC DOCKER
+═══════════════════════════════════════════════════════════════════════════════
+
+Étape 1 — Se placer dans le répertoire Docker
+  cd /chemin/vers/odoo17-docker
+
+Étape 2 — Démarrer les conteneurs en arrière-plan
+  docker compose up -d
+
+Étape 3 — Vérifier que les conteneurs tournent
+  docker compose ps
+  # Vous devez voir : odoo17-db (Running) et odoo17-web (Running)
+
+Étape 4 — Accéder à Odoo dans le navigateur
+  http://localhost:8069
+
+Étape 5 — Créer la base de données (première fois)
+  - Cliquez sur "Create database"
+  - Nom de la base   : timz_db
+  - Email admin      : zenabkissir@gmail.com
+  - Mot de passe     : admin
+  - Langue           : Français
+  - Pays             : France (ou Tchad)
+  - Cliquez "Create database"
+
+Étape 6 — Installer le module timz_web_project
+  a) Activez le mode développeur :
+     Paramètres → Activer le mode développeur
+     (ou ajouter ?debug=1 à l'URL)
+
+  b) Allez dans :
+     Applications → Mises à jour des applications → Mettre à jour la liste
+
+  c) Recherchez "Timz Web Project" et cliquez "Installer"
+
+  d) Le module installe automatiquement ses dépendances :
+     Contacts, CRM, Ventes, Projets, Facturation
+
+
+═══════════════════════════════════════════════════════════════════════════════
+2. REDÉMARRER ODOO
+═══════════════════════════════════════════════════════════════════════════════
+
+Redémarrage simple (après modification d'un fichier Python ou XML) :
+  docker compose restart odoo
+
+OU redémarrer avec mise à jour du module :
+  docker exec odoo17-web odoo --config /etc/odoo/odoo.conf \
+    -u timz_web_project -d timz_db --stop-after-init
+    
+
+Puis relancer normalement :
+  docker compose restart odoo
+
+Arrêt complet des services :
+  docker compose down
+
+Arrêt avec suppression des volumes (ATTENTION : efface toutes les données) :
+  docker compose down -v
+
+Afficher les logs en temps réel :
+  docker compose logs -f odoo
+
+Afficher les 100 dernières lignes de logs :
+  docker compose logs --tail=100 odoo
+
+
+
+
+option oustas akhar :
+
+docker compose stop odoo
+
+docker compose run --rm odoo odoo --config /etc/odoo/odoo.conf \
+  -d timz_db -u timz_web_project --stop-after-init
+
+docker compose up -d odoo
+
+═══════════════════════════════════════════════════════════════════════════════
+3. TESTER LE WORKFLOW COMPLET
+═══════════════════════════════════════════════════════════════════════════════
+
+Le workflow complet de Timz & Co se déroule en 3 phases :
+
+─── PHASE A : Demande Client ─────────────────────────────────────────────────
+
+  1. Créer un client (Contacts → Nouveau)
+     - Nom : "Société Alpha"
+     - Email : contact@alpha.fr
+     - Téléphone : +33 1 23 45 67 89
+
+  2. Créer une demande client (Menu "Timz & Co" → Demandes clients → Nouveau)
+     - Client      : Société Alpha
+     - Type        : Application Web
+     - Description : "Développement d'une application de gestion RH"
+     - Budget      : 15 000 €
+     - Deadline    : (dans 3 mois)
+     - Cliquez "Enregistrer"
+     → La référence TIMZ/DEM/2026/0001 est générée automatiquement
+
+  3. Qualifier la demande
+     - Cliquez le bouton "Qualifier"
+     → État passe à "Qualifiée"
+     → Une opportunité CRM est créée automatiquement
+     → Le bouton smart "Opportunité CRM" apparaît
+
+  4. Envoyer une proposition
+     - Cliquez "Envoyer une proposition"
+     → État passe à "Proposition envoyée"
+     → Un devis Sale Order est créé automatiquement
+     → Le bouton smart "Devis" apparaît
+
+  5. Marquer comme gagnée (rôle Manager)
+     - Cliquez "Marquer Gagnée"
+     → État passe à "Gagnée"
+     → L'opportunité CRM est marquée gagnée
+
+  6. Créer le projet web (rôle Manager)
+     - Cliquez "Créer le Projet Web"
+     → Un TimzWebProject est créé
+     → Vous êtes redirigé vers la fiche projet
+
+─── PHASE B : Suivi Projet ───────────────────────────────────────────────────
+
+  7. Dans la fiche Projet Web (Menu → Projets Web)
+     - Renseignez la Technologie : React.js
+     - Ajoutez un Chef de projet et des développeurs (onglet "Équipe")
+     - Renseignez Description et Livrables
+
+  8. Démarrer le projet (rôle Manager)
+     - Cliquez "Démarrer le projet"
+     → État : "En cours" | Date de début renseignée automatiquement
+     → Un projet Odoo Project est créé automatiquement
+     → Le bouton "Tâches" apparaît → cliquez-le pour créer des tâches
+
+  9. Créer des tâches (smart button "Tâches" ou module Project)
+     - Exemple : "Maquette UI", "Développement backend", "Tests"
+     - Assignez des développeurs, fixez des deadlines
+
+  10. Mettre à jour l'avancement
+      - Dans la fiche projet, faites glisser la barre "Avancement"
+      - Passez de 0% à 50%, puis 90%
+
+  11. Soumettre à la revue client (rôle Manager)
+      - Cliquez "Soumettre à la revue client"
+      → État : "En revue client" | Avancement : 90%
+
+  12. Confirmer la livraison (rôle Manager)
+      - Cliquez "Confirmer la livraison"
+      → État : "Livré" | Avancement : 100% | Date livraison effective renseignée
+
+─── PHASE C : Facturation ────────────────────────────────────────────────────
+
+  13. Créer la facture (rôle Manager)
+      - Cliquez "Créer la facture"
+      → Une facture account.move est créée
+      → État projet : "Facturé"
+      → Vous êtes redirigé vers la facture Odoo
+
+  14. Valider et envoyer la facture
+      - Dans la facture, cliquez "Confirmer"
+      - Cliquez "Envoyer et imprimer" pour envoyer par email au client
+
+
+═══════════════════════════════════════════════════════════════════════════════
+4. IMPRIMER LE RAPPORT QWEB PDF
+═══════════════════════════════════════════════════════════════════════════════
+
+Méthode 1 — Depuis la fiche projet (recommandée)
+  1. Ouvrez un projet web (Menu "Timz & Co" → Projets Web → cliquez un projet)
+  2. Cliquez le bouton "Imprimer la fiche" (icône imprimante) dans l'en-tête
+  → Le rapport PDF "Fiche_Projet_TIMZ/PRJ/XXXX_NomClient.pdf" est téléchargé
+
+Méthode 2 — Depuis la liste des projets
+  1. Allez dans "Timz & Co" → Projets Web (vue liste)
+  2. Cochez un ou plusieurs projets
+  3. Menu "Imprimer" → "Fiche Projet Web"
+  → Les PDF sont générés et téléchargés
+
+Méthode 3 — Via l'URL directe (mode debug)
+  http://localhost:8069/report/pdf/timz_web_project.report_timz_project_template/<ID>
+
+Contenu du rapport PDF :
+  ✔ En-tête Timz & Co avec référence et nom du projet
+  ✔ Informations générales (client, type, technologie, état, avancement)
+  ✔ Planification (dates, deadline)
+  ✔ Budget contractuel et montant facturé
+  ✔ Équipe projet (chef de projet + développeurs)
+  ✔ Description et livrables attendus
+  ✔ Zones de signature (chef de projet + client)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+5. GESTION DES DROITS D'ACCÈS
+═══════════════════════════════════════════════════════════════════════════════
+
+Deux groupes sont définis dans le module :
+
+  Timz & Co / Utilisateur :
+  - Créer et qualifier ses propres demandes clients
+  - Voir et modifier les projets dont il est membre (développeur ou chef)
+  - Imprimer les fiches projets
+
+  Timz & Co / Manager :
+  - Accès complet à toutes les demandes et tous les projets
+  - Envoyer des propositions, marquer gagné/perdu
+  - Créer des projets, facturer
+  - Accès aux menus Rapports et Configuration
+
+Attribuer un groupe à un utilisateur :
+  Paramètres → Utilisateurs → sélectionnez l'utilisateur
+  → Section "Timz Web Project" → sélectionnez "Utilisateur" ou "Manager"
+
+
+═══════════════════════════════════════════════════════════════════════════════
+6. DÉPANNAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+Problème : Le module n'apparaît pas dans la liste des applications
+  Solution : Activer mode développeur → Applications → Mettre à jour la liste
+
+Problème : Erreur "Module not found" au démarrage
+  Solution : Vérifiez que le dossier addons/timz_web_project est présent
+             et que docker-compose.yml monte bien ./addons:/mnt/extra-addons
+
+Problème : Erreur XML lors de l'installation
+  Solution : docker compose logs odoo | grep ERROR
+             Corrigez l'erreur, puis :
+             docker exec odoo17-web odoo -u timz_web_project -d timz_db \
+               --config /etc/odoo/odoo.conf --stop-after-init
+
+Problème : Les modifications Python ne s'appliquent pas
+  Solution : docker compose restart odoo
+             Puis mettre à jour : Paramètres → Modules techniques →
+             rechercher timz_web_project → Mettre à jour
+
+Problème : Port 8069 déjà utilisé
+  Solution : Changez le port dans docker-compose.yml :
+             ports: - "8070:8069"
+             Puis accédez via http://localhost:8070
+
+═══════════════════════════════════════════════════════════════════════════════
+  Timz & Co — Système d'Information sur Odoo 17
+  Module : timz_web_project v17.0.1.0.0
+  Auteur : MAHAMAT AHMAT TIMAN
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,186 @@
+@startuml diagramme_classes_complet
+
+left to right direction
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam classHeaderBackgroundColor #4B0082
+skinparam classHeaderFontColor #FFFFFF
+skinparam classBorderColor #4B0082
+skinparam classBackgroundColor #F9F6FF
+skinparam classFontStyle bold
+skinparam packageBorderColor #AAAAAA
+skinparam packageBackgroundColor #FAFAFA
+skinparam packageFontSize 13
+skinparam arrowColor #555555
+skinparam arrowThickness 1.3
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam nodesep 50
+skinparam ranksep 80
+
+title Diagramme de Classes Complet — Timz & Co\nModule : timz_web_project · Odoo 17
+
+' ══════════════════════════════════════════════
+' MIXINS (en haut à gauche)
+' ══════════════════════════════════════════════
+
+package "Mixins Odoo" #F0F0F0 {
+
+    class "mail.thread" as MailThread {
+        + message_ids : One2many
+        + message_follower_ids : One2many
+    }
+
+    class "mail.activity.mixin" as MailActivity {
+        + activity_ids : One2many
+        + activity_state : Selection
+    }
+
+}
+
+' ══════════════════════════════════════════════
+' CLASSES CUSTOM
+' ══════════════════════════════════════════════
+
+package "timz_web_project (Custom)" #EDE7F6 {
+
+    class "timz.client.request" as TimzRequest {
+        + name : Char
+        + client_id : Many2one
+        + email : Char
+        + description : Text
+        + project_type : Selection
+        + priority : Selection
+        + budget : Monetary
+        + deadline : Date
+        + state : Selection
+        + kanban_state : Selection
+        + user_id : Many2one
+        + crm_lead_id : Many2one
+        + sale_order_id : Many2one
+        + web_project_id : Many2one
+        + sale_order_count : Integer
+        __
+        + action_qualify()
+        + action_send_proposal()
+        + action_mark_won()
+        + action_mark_lost()
+        + action_create_project()
+    }
+
+    class "timz.web.project" as TimzProject {
+        + name : Char
+        + reference : Char
+        + project_type : Selection
+        + technology : Selection
+        + description : Html
+        + deliverables : Text
+        + start_date : Date
+        + end_date : Date
+        + actual_end_date : Date
+        + deadline : Date
+        + progress : Integer
+        + budget : Monetary
+        + amount_invoiced : Monetary
+        + team_lead_id : Many2one
+        + developer_ids : Many2many
+        + state : Selection
+        + kanban_state : Selection
+        + client_id : Many2one
+        + client_request_id : Many2one
+        + odoo_project_id : Many2one
+        + sale_order_id : Many2one
+        + invoice_ids : Many2many
+        + invoice_count : Integer
+        + task_count : Integer
+        __
+        + action_start()
+        + action_submit_review()
+        + action_deliver()
+        + action_create_invoice()
+        + action_cancel()
+        + action_reset_draft()
+        + action_print_report()
+    }
+
+}
+
+' ══════════════════════════════════════════════
+' MODÈLES ODOO STANDARD
+' ══════════════════════════════════════════════
+
+package "Odoo Standard" #EEEEEE {
+
+    class "res.partner" as ResPartner {
+        + name : Char
+        + email : Char
+        + phone : Char
+    }
+
+    class "res.users" as ResUsers {
+        + name : Char
+        + login : Char
+        + partner_id : Many2one
+    }
+
+    class "crm.lead" as CrmLead {
+        + name : Char
+        + partner_id : Many2one
+        + expected_revenue : Monetary
+    }
+
+    class "sale.order" as SaleOrder {
+        + name : Char
+        + partner_id : Many2one
+        + amount_total : Monetary
+        + state : Selection
+    }
+
+    class "project.project" as ProjectProject {
+        + name : Char
+        + partner_id : Many2one
+        + task_ids : One2many
+    }
+
+    class "account.move" as AccountMove {
+        + name : Char
+        + partner_id : Many2one
+        + amount_total : Monetary
+        + move_type : Selection
+        + state : Selection
+    }
+
+}
+
+' ══════════════════════════════════════════════
+' HÉRITAGE
+' ══════════════════════════════════════════════
+
+MailThread   <|-- TimzRequest
+MailActivity <|-- TimzRequest
+MailThread   <|-- TimzProject
+MailActivity <|-- TimzProject
+
+' ══════════════════════════════════════════════
+' RELATION ENTRE LES DEUX CLASSES CUSTOM
+' ══════════════════════════════════════════════
+
+TimzRequest "1" --> "0..1" TimzProject : crée >
+
+' ══════════════════════════════════════════════
+' RELATIONS CUSTOM → ODOO STANDARD
+' ══════════════════════════════════════════════
+
+TimzRequest --> ResPartner    : client_id
+TimzRequest --> ResUsers      : user_id
+TimzRequest --> CrmLead       : crm_lead_id
+TimzRequest --> SaleOrder     : sale_order_id
+
+TimzProject --> ResPartner    : client_id
+TimzProject --> ResUsers      : team_lead_id
+TimzProject --> SaleOrder     : sale_order_id
+TimzProject --> ProjectProject : odoo_project_id
+TimzProject --> AccountMove   : invoice_ids
+
+@enduml

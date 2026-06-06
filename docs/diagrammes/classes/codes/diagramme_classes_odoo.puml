@@ -1,0 +1,93 @@
+@startuml diagramme_classes_odoo
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classHeaderBackgroundColor #546E7A
+skinparam classHeaderFontColor #FFFFFF
+skinparam classBorderColor #546E7A
+skinparam classBackgroundColor #F5F5F5
+skinparam classFontStyle bold
+skinparam packageBorderColor #777777
+skinparam packageBackgroundColor #EEEEEE
+skinparam packageFontSize 14
+skinparam packageFontStyle bold
+skinparam arrowColor #546E7A
+skinparam arrowThickness 1.5
+skinparam shadowing false
+skinparam roundcorner 8
+
+title Modèles Odoo Standard utilisés\ntimz_web_project · Odoo 17
+
+package "Odoo Standard" #EEEEEE {
+
+    class "res.partner" as ResPartner {
+        + name : Char
+        + email : Char
+        + phone : Char
+        + street : Char
+        + city : Char
+        + country_id : Many2one
+    }
+
+    class "res.users" as ResUsers {
+        + name : Char
+        + email : Char
+        + login : Char
+        + partner_id : Many2one
+        + groups_id : Many2many
+    }
+
+    class "crm.lead" as CrmLead {
+        + name : Char
+        + partner_id : Many2one
+        + expected_revenue : Monetary
+        + stage_id : Many2one
+        + user_id : Many2one
+    }
+
+    class "sale.order" as SaleOrder {
+        + name : Char
+        + partner_id : Many2one
+        + order_line : One2many
+        + amount_total : Monetary
+        + state : Selection
+    }
+
+    class "project.project" as ProjectProject {
+        + name : Char
+        + partner_id : Many2one
+        + user_id : Many2one
+        + task_ids : One2many
+    }
+
+    class "account.move" as AccountMove {
+        + name : Char
+        + partner_id : Many2one
+        + invoice_line_ids : One2many
+        + amount_total : Monetary
+        + move_type : Selection
+        + state : Selection
+    }
+
+    class "mail.thread" as MailThread {
+        + message_ids : One2many
+        + message_follower_ids : One2many
+    }
+
+    class "mail.activity.mixin" as MailActivity {
+        + activity_ids : One2many
+        + activity_state : Selection
+    }
+
+}
+
+' ── Relations entre modèles Odoo ────────────────────────────────────────────
+ResUsers "1" --> "1" ResPartner      : partner_id
+CrmLead  "many" --> "1" ResPartner   : partner_id
+CrmLead  "many" --> "1" ResUsers     : user_id
+SaleOrder "many" --> "1" ResPartner  : partner_id
+ProjectProject "many" --> "1" ResPartner : partner_id
+ProjectProject "many" --> "1" ResUsers  : user_id
+AccountMove "many" --> "1" ResPartner   : partner_id
+
+@enduml

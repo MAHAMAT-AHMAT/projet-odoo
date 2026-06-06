@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DemClient"
+  targetNamespace="http://timzandco.com/bpmn/demande-client"
+  exporter="bpmn.io"
+  exporterVersion="17.0">
+
+  <bpmn:collaboration id="Collaboration_DemClient">
+    <bpmn:participant id="Part_Client" name="Client" processRef="Proc_Client"/>
+    <bpmn:participant id="Part_Commercial" name="Commercial — Timz &amp; Co" processRef="Proc_Commercial"/>
+    <bpmn:participant id="Part_Odoo" name="Système Odoo" processRef="Proc_Odoo"/>
+
+    <bpmn:messageFlow id="MF_1" name="Demande web" sourceRef="Task_EnvoyerDemande" targetRef="StartEvent_ReceptionDemande"/>
+    <bpmn:messageFlow id="MF_2" name="Proposition commerciale" sourceRef="Task_EnvoyerProposition" targetRef="StartEvent_ReceptionProposition"/>
+    <bpmn:messageFlow id="MF_3" name="Réponse client (oui/non)" sourceRef="Task_RepondreProposition" targetRef="IntermEvent_ReponseClient"/>
+    <bpmn:messageFlow id="MF_4" name="Confirmation création projet" sourceRef="Task_CreerOpportunite" targetRef="CatchEvent_ConfirmCRM"/>
+  </bpmn:collaboration>
+
+  <!-- ═══════════════════════════════════════
+       POOL 1 : CLIENT
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_Client" name="Processus Client" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_Client" name="Besoin web identifié">
+      <bpmn:outgoing>SF_C1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_RemplirFormulaire" name="Remplir le formulaire de demande">
+      <bpmn:incoming>SF_C1</bpmn:incoming>
+      <bpmn:outgoing>SF_C2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_EnvoyerDemande" name="Envoyer la demande à Timz &amp; Co">
+      <bpmn:incoming>SF_C2</bpmn:incoming>
+      <bpmn:outgoing>SF_C3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="CatchEvent_ConfirmCRM" name="Recevoir accusé de réception">
+      <bpmn:incoming>SF_C3</bpmn:incoming>
+      <bpmn:outgoing>SF_C4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_C1"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:userTask id="Task_AttendreProposition" name="Attendre la proposition commerciale">
+      <bpmn:incoming>SF_C4</bpmn:incoming>
+      <bpmn:outgoing>SF_C5</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="StartEvent_ReceptionProposition" name="Recevoir la proposition">
+      <bpmn:incoming>SF_C5</bpmn:incoming>
+      <bpmn:outgoing>SF_C6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_C2"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:userTask id="Task_EvaluerProposition" name="Évaluer la proposition">
+      <bpmn:incoming>SF_C6</bpmn:incoming>
+      <bpmn:outgoing>SF_C7</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_DecisionClient" name="Proposition acceptable ?">
+      <bpmn:incoming>SF_C7</bpmn:incoming>
+      <bpmn:outgoing>SF_C8_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_C8_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_RepondreProposition" name="Accepter la proposition">
+      <bpmn:incoming>SF_C8_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_C9</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="EndEvent_ClientAccepte" name="Commande confirmée">
+      <bpmn:incoming>SF_C9</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:userTask id="Task_RefuserProposition" name="Refuser / Négocier">
+      <bpmn:incoming>SF_C8_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_C10</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="EndEvent_ClientRefuse" name="Demande abandonnée">
+      <bpmn:incoming>SF_C10</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_C1" sourceRef="StartEvent_Client" targetRef="Task_RemplirFormulaire"/>
+    <bpmn:sequenceFlow id="SF_C2" sourceRef="Task_RemplirFormulaire" targetRef="Task_EnvoyerDemande"/>
+    <bpmn:sequenceFlow id="SF_C3" sourceRef="Task_EnvoyerDemande" targetRef="CatchEvent_ConfirmCRM"/>
+    <bpmn:sequenceFlow id="SF_C4" sourceRef="CatchEvent_ConfirmCRM" targetRef="Task_AttendreProposition"/>
+    <bpmn:sequenceFlow id="SF_C5" sourceRef="Task_AttendreProposition" targetRef="StartEvent_ReceptionProposition"/>
+    <bpmn:sequenceFlow id="SF_C6" sourceRef="StartEvent_ReceptionProposition" targetRef="Task_EvaluerProposition"/>
+    <bpmn:sequenceFlow id="SF_C7" sourceRef="Task_EvaluerProposition" targetRef="GW_DecisionClient"/>
+    <bpmn:sequenceFlow id="SF_C8_Oui" name="Oui" sourceRef="GW_DecisionClient" targetRef="Task_RepondreProposition"/>
+    <bpmn:sequenceFlow id="SF_C8_Non" name="Non" sourceRef="GW_DecisionClient" targetRef="Task_RefuserProposition"/>
+    <bpmn:sequenceFlow id="SF_C9" sourceRef="Task_RepondreProposition" targetRef="EndEvent_ClientAccepte"/>
+    <bpmn:sequenceFlow id="SF_C10" sourceRef="Task_RefuserProposition" targetRef="EndEvent_ClientRefuse"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 2 : COMMERCIAL TIMZ & CO
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_Commercial" name="Processus Commercial" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_ReceptionDemande" name="Recevoir la demande client">
+      <bpmn:outgoing>SF_CO1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CO1"/>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_AnalyserDemande" name="Analyser et qualifier la demande">
+      <bpmn:incoming>SF_CO1</bpmn:incoming>
+      <bpmn:outgoing>SF_CO2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="GW_DemandeFaisable" name="Demande réalisable ?">
+      <bpmn:incoming>SF_CO2</bpmn:incoming>
+      <bpmn:outgoing>SF_CO3_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CO3_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="Task_CreerOpportunite" name="Créer l'opportunité CRM">
+      <bpmn:incoming>SF_CO3_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CO4</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:userTask id="Task_RedigerDevis" name="Rédiger et chiffrer le devis">
+      <bpmn:incoming>SF_CO4</bpmn:incoming>
+      <bpmn:outgoing>SF_CO5</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_EnvoyerProposition" name="Envoyer la proposition au client">
+      <bpmn:incoming>SF_CO5</bpmn:incoming>
+      <bpmn:outgoing>SF_CO6</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:intermediateCatchEvent id="IntermEvent_ReponseClient" name="Recevoir réponse client">
+      <bpmn:incoming>SF_CO6</bpmn:incoming>
+      <bpmn:outgoing>SF_CO7</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_CO2"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:exclusiveGateway id="GW_ReponseClient" name="Client accepte ?">
+      <bpmn:incoming>SF_CO7</bpmn:incoming>
+      <bpmn:outgoing>SF_CO8_Oui</bpmn:outgoing>
+      <bpmn:outgoing>SF_CO8_Non</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:userTask id="Task_MarquerGagne" name="Marquer demande Gagnée">
+      <bpmn:incoming>SF_CO8_Oui</bpmn:incoming>
+      <bpmn:outgoing>SF_CO9</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_LancerProjet" name="Créer le Projet Web">
+      <bpmn:incoming>SF_CO9</bpmn:incoming>
+      <bpmn:outgoing>SF_CO10</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="EndEvent_ProjetCree" name="Projet web créé dans Odoo">
+      <bpmn:incoming>SF_CO10</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:userTask id="Task_MarquerPerdu" name="Marquer demande Perdue">
+      <bpmn:incoming>SF_CO3_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_CO11</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_MarquerPerdu2" name="Marquer demande Perdue">
+      <bpmn:incoming>SF_CO8_Non</bpmn:incoming>
+      <bpmn:outgoing>SF_CO12</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="EndEvent_DemandePerdueNF" name="Demande non faisable — clôturée">
+      <bpmn:incoming>SF_CO11</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_DemandePerdue" name="Demande perdue — clôturée">
+      <bpmn:incoming>SF_CO12</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_CO1" sourceRef="StartEvent_ReceptionDemande" targetRef="Task_AnalyserDemande"/>
+    <bpmn:sequenceFlow id="SF_CO2" sourceRef="Task_AnalyserDemande" targetRef="GW_DemandeFaisable"/>
+    <bpmn:sequenceFlow id="SF_CO3_Oui" name="Oui" sourceRef="GW_DemandeFaisable" targetRef="Task_CreerOpportunite"/>
+    <bpmn:sequenceFlow id="SF_CO3_Non" name="Non" sourceRef="GW_DemandeFaisable" targetRef="Task_MarquerPerdu"/>
+    <bpmn:sequenceFlow id="SF_CO4" sourceRef="Task_CreerOpportunite" targetRef="Task_RedigerDevis"/>
+    <bpmn:sequenceFlow id="SF_CO5" sourceRef="Task_RedigerDevis" targetRef="Task_EnvoyerProposition"/>
+    <bpmn:sequenceFlow id="SF_CO6" sourceRef="Task_EnvoyerProposition" targetRef="IntermEvent_ReponseClient"/>
+    <bpmn:sequenceFlow id="SF_CO7" sourceRef="IntermEvent_ReponseClient" targetRef="GW_ReponseClient"/>
+    <bpmn:sequenceFlow id="SF_CO8_Oui" name="Accepte" sourceRef="GW_ReponseClient" targetRef="Task_MarquerGagne"/>
+    <bpmn:sequenceFlow id="SF_CO8_Non" name="Refuse" sourceRef="GW_ReponseClient" targetRef="Task_MarquerPerdu2"/>
+    <bpmn:sequenceFlow id="SF_CO9" sourceRef="Task_MarquerGagne" targetRef="Task_LancerProjet"/>
+    <bpmn:sequenceFlow id="SF_CO10" sourceRef="Task_LancerProjet" targetRef="EndEvent_ProjetCree"/>
+    <bpmn:sequenceFlow id="SF_CO11" sourceRef="Task_MarquerPerdu" targetRef="EndEvent_DemandePerdueNF"/>
+    <bpmn:sequenceFlow id="SF_CO12" sourceRef="Task_MarquerPerdu2" targetRef="EndEvent_DemandePerdue"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       POOL 3 : SYSTÈME ODOO
+  ═══════════════════════════════════════ -->
+  <bpmn:process id="Proc_Odoo" name="Système Odoo" isExecutable="false">
+
+    <bpmn:startEvent id="StartEvent_Odoo" name="Demande saisie (timz.client.request)">
+      <bpmn:outgoing>SF_O1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_GenererReference" name="Générer la référence TIMZ/DEM/XXXX">
+      <bpmn:incoming>SF_O1</bpmn:incoming>
+      <bpmn:outgoing>SF_O2</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="Task_NotifierCommercial" name="Notifier le commercial responsable">
+      <bpmn:incoming>SF_O2</bpmn:incoming>
+      <bpmn:outgoing>SF_O3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="Task_MajEtatCRM" name="Mettre à jour CRM (état opportunité)">
+      <bpmn:incoming>SF_O3</bpmn:incoming>
+      <bpmn:outgoing>SF_O4</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_Odoo" name="Données enregistrées dans Odoo">
+      <bpmn:incoming>SF_O4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_O1" sourceRef="StartEvent_Odoo" targetRef="Task_GenererReference"/>
+    <bpmn:sequenceFlow id="SF_O2" sourceRef="Task_GenererReference" targetRef="Task_NotifierCommercial"/>
+    <bpmn:sequenceFlow id="SF_O3" sourceRef="Task_NotifierCommercial" targetRef="Task_MajEtatCRM"/>
+    <bpmn:sequenceFlow id="SF_O4" sourceRef="Task_MajEtatCRM" targetRef="EndEvent_Odoo"/>
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════
+       DIAGRAMME (DI)
+  ═══════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_DemClient">
+
+      <!-- Pool Client -->
+      <bpmndi:BPMNShape id="Part_Client_di" bpmnElement="Part_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1200" height="200"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="170" y="170" width="20" height="120"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_Client_di" bpmnElement="StartEvent_Client">
+        <dc:Bounds x="232" y="162" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="205" y="205" width="90" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RemplirFormulaire_di" bpmnElement="Task_RemplirFormulaire">
+        <dc:Bounds x="320" y="140" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnvoyerDemande_di" bpmnElement="Task_EnvoyerDemande">
+        <dc:Bounds x="490" y="140" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CatchEvent_ConfirmCRM_di" bpmnElement="CatchEvent_ConfirmCRM">
+        <dc:Bounds x="662" y="162" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="638" y="205" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AttendreProposition_di" bpmnElement="Task_AttendreProposition">
+        <dc:Bounds x="750" y="140" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_ReceptionProposition_di" bpmnElement="StartEvent_ReceptionProposition">
+        <dc:Bounds x="922" y="162" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="898" y="205" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EvaluerProposition_di" bpmnElement="Task_EvaluerProposition">
+        <dc:Bounds x="1010" y="140" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_DecisionClient_di" bpmnElement="GW_DecisionClient" isMarkerVisible="true">
+        <dc:Bounds x="1185" y="155" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1168" y="212" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RepondreProposition_di" bpmnElement="Task_RepondreProposition">
+        <dc:Bounds x="1295" y="140" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ClientAccepte_di" bpmnElement="EndEvent_ClientAccepte">
+        <dc:Bounds x="1462" y="162" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1440" y="205" width="80" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RefuserProposition_di" bpmnElement="Task_RefuserProposition">
+        <dc:Bounds x="1295" y="260" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ClientRefuse_di" bpmnElement="EndEvent_ClientRefuse">
+        <dc:Bounds x="1462" y="282" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1440" y="325" width="80" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Sequence flows Client -->
+      <bpmndi:BPMNEdge id="SF_C1_di" bpmnElement="SF_C1"><di:waypoint x="268" y="180"/><di:waypoint x="320" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C2_di" bpmnElement="SF_C2"><di:waypoint x="440" y="180"/><di:waypoint x="490" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C3_di" bpmnElement="SF_C3"><di:waypoint x="610" y="180"/><di:waypoint x="662" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C4_di" bpmnElement="SF_C4"><di:waypoint x="698" y="180"/><di:waypoint x="750" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C5_di" bpmnElement="SF_C5"><di:waypoint x="870" y="180"/><di:waypoint x="922" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C6_di" bpmnElement="SF_C6"><di:waypoint x="958" y="180"/><di:waypoint x="1010" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C7_di" bpmnElement="SF_C7"><di:waypoint x="1130" y="180"/><di:waypoint x="1185" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C8_Oui_di" bpmnElement="SF_C8_Oui"><di:waypoint x="1235" y="180"/><di:waypoint x="1295" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C8_Non_di" bpmnElement="SF_C8_Non"><di:waypoint x="1210" y="205"/><di:waypoint x="1210" y="300"/><di:waypoint x="1295" y="300"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C9_di" bpmnElement="SF_C9"><di:waypoint x="1415" y="180"/><di:waypoint x="1462" y="180"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_C10_di" bpmnElement="SF_C10"><di:waypoint x="1415" y="300"/><di:waypoint x="1462" y="300"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Commercial -->
+      <bpmndi:BPMNShape id="Part_Commercial_di" bpmnElement="Part_Commercial" isHorizontal="true">
+        <dc:Bounds x="160" y="330" width="1200" height="220"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="170" y="430" width="20" height="120"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_ReceptionDemande_di" bpmnElement="StartEvent_ReceptionDemande">
+        <dc:Bounds x="232" y="430" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="205" y="473" width="90" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalyserDemande_di" bpmnElement="Task_AnalyserDemande">
+        <dc:Bounds x="320" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_DemandeFaisable_di" bpmnElement="GW_DemandeFaisable" isMarkerVisible="true">
+        <dc:Bounds x="495" y="423" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="478" y="480" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreerOpportunite_di" bpmnElement="Task_CreerOpportunite">
+        <dc:Bounds x="600" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RedigerDevis_di" bpmnElement="Task_RedigerDevis">
+        <dc:Bounds x="780" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnvoyerProposition_di" bpmnElement="Task_EnvoyerProposition">
+        <dc:Bounds x="960" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermEvent_ReponseClient_di" bpmnElement="IntermEvent_ReponseClient">
+        <dc:Bounds x="1132" y="430" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1108" y="473" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_ReponseClient_di" bpmnElement="GW_ReponseClient" isMarkerVisible="true">
+        <dc:Bounds x="1225" y="423" width="50" height="50"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1208" y="480" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MarquerGagne_di" bpmnElement="Task_MarquerGagne">
+        <dc:Bounds x="1340" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_LancerProjet_di" bpmnElement="Task_LancerProjet">
+        <dc:Bounds x="1520" y="408" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ProjetCree_di" bpmnElement="EndEvent_ProjetCree">
+        <dc:Bounds x="1692" y="430" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1668" y="473" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MarquerPerdu_di" bpmnElement="Task_MarquerPerdu">
+        <dc:Bounds x="600" y="510" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_DemandePerdueNF_di" bpmnElement="EndEvent_DemandePerdueNF">
+        <dc:Bounds x="780" y="532" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="756" y="575" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MarquerPerdu2_di" bpmnElement="Task_MarquerPerdu2">
+        <dc:Bounds x="1340" y="510" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_DemandePerdue_di" bpmnElement="EndEvent_DemandePerdue">
+        <dc:Bounds x="1520" y="532" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1496" y="575" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Sequence flows Commercial -->
+      <bpmndi:BPMNEdge id="SF_CO1_di" bpmnElement="SF_CO1"><di:waypoint x="268" y="448"/><di:waypoint x="320" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO2_di" bpmnElement="SF_CO2"><di:waypoint x="440" y="448"/><di:waypoint x="495" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO3_Oui_di" bpmnElement="SF_CO3_Oui"><di:waypoint x="545" y="448"/><di:waypoint x="600" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO3_Non_di" bpmnElement="SF_CO3_Non"><di:waypoint x="520" y="473"/><di:waypoint x="520" y="550"/><di:waypoint x="600" y="550"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO4_di" bpmnElement="SF_CO4"><di:waypoint x="720" y="448"/><di:waypoint x="780" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO5_di" bpmnElement="SF_CO5"><di:waypoint x="900" y="448"/><di:waypoint x="960" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO6_di" bpmnElement="SF_CO6"><di:waypoint x="1080" y="448"/><di:waypoint x="1132" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO7_di" bpmnElement="SF_CO7"><di:waypoint x="1168" y="448"/><di:waypoint x="1225" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO8_Oui_di" bpmnElement="SF_CO8_Oui"><di:waypoint x="1275" y="448"/><di:waypoint x="1340" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO8_Non_di" bpmnElement="SF_CO8_Non"><di:waypoint x="1250" y="473"/><di:waypoint x="1250" y="550"/><di:waypoint x="1340" y="550"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO9_di" bpmnElement="SF_CO9"><di:waypoint x="1460" y="448"/><di:waypoint x="1520" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO10_di" bpmnElement="SF_CO10"><di:waypoint x="1640" y="448"/><di:waypoint x="1692" y="448"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO11_di" bpmnElement="SF_CO11"><di:waypoint x="720" y="550"/><di:waypoint x="780" y="550"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_CO12_di" bpmnElement="SF_CO12"><di:waypoint x="1460" y="550"/><di:waypoint x="1520" y="550"/></bpmndi:BPMNEdge>
+
+      <!-- Pool Odoo -->
+      <bpmndi:BPMNShape id="Part_Odoo_di" bpmnElement="Part_Odoo" isHorizontal="true">
+        <dc:Bounds x="160" y="620" width="900" height="140"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="170" y="680" width="20" height="80"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="StartEvent_Odoo_di" bpmnElement="StartEvent_Odoo">
+        <dc:Bounds x="232" y="672" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="205" y="715" width="90" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GenererReference_di" bpmnElement="Task_GenererReference">
+        <dc:Bounds x="320" y="650" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifierCommercial_di" bpmnElement="Task_NotifierCommercial">
+        <dc:Bounds x="500" y="650" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MajEtatCRM_di" bpmnElement="Task_MajEtatCRM">
+        <dc:Bounds x="680" y="650" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Odoo_di" bpmnElement="EndEvent_Odoo">
+        <dc:Bounds x="862" y="672" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="838" y="715" width="84" height="27"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_O1_di" bpmnElement="SF_O1"><di:waypoint x="268" y="690"/><di:waypoint x="320" y="690"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_O2_di" bpmnElement="SF_O2"><di:waypoint x="440" y="690"/><di:waypoint x="500" y="690"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_O3_di" bpmnElement="SF_O3"><di:waypoint x="620" y="690"/><di:waypoint x="680" y="690"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_O4_di" bpmnElement="SF_O4"><di:waypoint x="800" y="690"/><di:waypoint x="862" y="690"/></bpmndi:BPMNEdge>
+
+      <!-- Message flows -->
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="550" y="220"/>
+        <di:waypoint x="550" y="330"/>
+        <di:waypoint x="250" y="330"/>
+        <di:waypoint x="250" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1020" y="408"/>
+        <di:waypoint x="1020" y="280"/>
+        <di:waypoint x="940" y="280"/>
+        <di:waypoint x="940" y="198"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1355" y="220"/>
+        <di:waypoint x="1355" y="330"/>
+        <di:waypoint x="1150" y="330"/>
+        <di:waypoint x="1150" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="660" y="408"/>
+        <di:waypoint x="660" y="620"/>
+        <di:waypoint x="250" y="620"/>
+        <di:waypoint x="250" y="690"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

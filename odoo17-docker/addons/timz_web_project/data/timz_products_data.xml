@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Produits de service Timz & Co — créés automatiquement à l'installation -->
+
+    <record id="product_timz_site_vitrine" model="product.template">
+        <field name="name">Site Vitrine</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Création d'un site vitrine sur mesure par Timz &amp; Co</field>
+    </record>
+
+    <record id="product_timz_ecommerce" model="product.template">
+        <field name="name">E-Commerce</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Développement d'une boutique e-commerce par Timz &amp; Co</field>
+    </record>
+
+    <record id="product_timz_webapp" model="product.template">
+        <field name="name">Application Web</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Développement d'une application web sur mesure par Timz &amp; Co</field>
+    </record>
+
+    <record id="product_timz_mobile" model="product.template">
+        <field name="name">Application Mobile</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Développement d'une application mobile par Timz &amp; Co</field>
+    </record>
+
+    <record id="product_timz_erp" model="product.template">
+        <field name="name">Intégration ERP/CRM</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="description_sale">Intégration et paramétrage ERP/CRM par Timz &amp; Co</field>
+    </record>
+
+</odoo>
