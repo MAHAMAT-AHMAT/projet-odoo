@@ -33,6 +33,8 @@
 
 L'entreprise compte deux rôles internes : les **Commerciaux/Utilisateurs** (saisie des demandes, suivi) et les **Managers** (gestion complète, facturation, rapports).
 
+![Site web Timz & Co](images/timz-site.png)
+
 ### 1.2 Problématique
 
 Avant la mise en place du SI, Timz & Co gérait ses activités via des fichiers Excel et des échanges email disparates. Cela engendrait :
@@ -81,7 +83,7 @@ Ce processus couvre la vie d'une demande depuis son dépôt par le client jusqu'
 
 ![Processus 1 — Demande Client](images/demande-client.png)
 
-> Les fichiers BPMN source sont dans [docs/diagrammes/Bpmn/codes/processus_demande_client.bpmn](diagrammes/Bpmn/codes/processus_demande_client.bpmn)
+> Les fichiers BPMN source sont dans [docs/diagrammes/Bpmn/codes/demande_client.bpmn](diagrammes/Bpmn/codes/demande_client.bpmn)
 
 ---
 
@@ -108,7 +110,7 @@ Ce processus décrit la gestion opérationnelle du projet depuis son démarrage 
 
 ![Processus 2 — Suivi Projet Web](images/suivi-projet.png)
 
-> Fichier source : [docs/diagrammes/Bpmn/codes/processus_suivi_projet_web.bpmn](diagrammes/Bpmn/codes/processus_suivi_projet_web.bpmn)
+> Fichier source : [docs/diagrammes/Bpmn/codes/suivi_projet_web.bpmn](diagrammes/Bpmn/codes/suivi_projet_web.bpmn)
 
 ---
 
@@ -135,7 +137,7 @@ Ce processus couvre la phase finale : réception par le client, paiement et arch
 
 ![Processus 3 — Livraison et Facturation](images/livraison-facture.png)
 
-> Fichier source : [docs/diagrammes/Bpmn/codes/processus_livraison_facturation.bpmn](diagrammes/Bpmn/codes/processus_livraison_facturation.bpmn)
+> Fichier source : [docs/diagrammes/Bpmn/codes/livraison_facturation.bpmn](diagrammes/Bpmn/codes/livraison_facturation.bpmn)
 
 ---
 
@@ -468,9 +470,9 @@ docker exec -it odoo17-docker-odoo-1 \
 
 | Fichier | Outil | Description |
 |---|---|---|
-| [diagrammes/Bpmn/codes/processus_demande_client.bpmn](diagrammes/Bpmn/codes/processus_demande_client.bpmn) | bpmn.io | Processus 1 |
-| [diagrammes/Bpmn/codes/processus_suivi_projet_web.bpmn](diagrammes/Bpmn/codes/processus_suivi_projet_web.bpmn) | bpmn.io | Processus 2 |
-| [diagrammes/Bpmn/codes/processus_livraison_facturation.bpmn](diagrammes/Bpmn/codes/processus_livraison_facturation.bpmn) | bpmn.io | Processus 3 |
+| [diagrammes/Bpmn/codes/demande_client.bpmn](diagrammes/Bpmn/codes/demande_client.bpmn) | bpmn.io | Processus 1 |
+| [diagrammes/Bpmn/codes/suivi_projet_web.bpmn](diagrammes/Bpmn/codes/suivi_projet_web.bpmn) | bpmn.io | Processus 2 |
+| [diagrammes/Bpmn/codes/livraison_facturation.bpmn](diagrammes/Bpmn/codes/livraison_facturation.bpmn) | bpmn.io | Processus 3 |
 | [diagramme_classes_custom.puml](diagramme_classes_custom.puml) | PlantUML | Classes custom (violet) |
 | [diagramme_classes_odoo.puml](diagramme_classes_odoo.puml) | PlantUML | Classes Odoo standard (gris) |
 | [diagramme_classes.puml](diagramme_classes.puml) | PlantUML | Diagramme complet |
