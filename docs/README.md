@@ -33,7 +33,30 @@
 
 L'entreprise compte deux rôles internes : les **Commerciaux/Utilisateurs** (saisie des demandes, suivi) et les **Managers** (gestion complète, facturation, rapports).
 
-![Site web Timz & Co](images/timz-site.png)
+**Aperçu du site Timz & Co**
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/timz-site-accueil.png" alt="Accueil" width="100%"/><br/>
+      <sub><b>Page d'accueil</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="images/timz-site-services.png" alt="Services" width="100%"/><br/>
+      <sub><b>Nos services</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/timz-site-formulaire.png" alt="Formulaire" width="100%"/><br/>
+      <sub><b>Formulaire de contact</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="images/timz-site-workflow.png" alt="Workflow" width="100%"/><br/>
+      <sub><b>Workflow client</b></sub>
+    </td>
+  </tr>
+</table>
 
 ### 1.2 Problématique
 
